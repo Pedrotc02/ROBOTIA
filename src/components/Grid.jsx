@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'; // Importa useState y useEffect desde 'react'
 import mqtt from 'mqtt'; // Asegúrate de importar el paquete mqtt
+import Square from './Square';
 
-function MyComponent() {
+function Grid() {
   const [messageReceived, setMessageReceived] = useState(false);
-  const [squaresColor, setSquaresColor] = useState([]); // Define squaresColor y setSquaresColor utilizando useState
 
   useEffect(() => {
     const client = mqtt.connect('ws://192.168.48.245:8083'); // Conecta usando WebSocket
@@ -16,7 +16,7 @@ function MyComponent() {
     client.on('message', (topic, message) => {
       if (!messageReceived) {
         const color = message.toString();
-        setSquaresColor(Array(squaresColor.length).fill(color)); // Rellenar array con color recibido
+        console.log("Mensaje recibido: ", message.toString());
         setMessageReceived(true);
         client.unsubscribe('map'); // Desuscribirse del tema para no recibir más mensajes
         client.end(); // Terminar conexión
@@ -34,13 +34,20 @@ function MyComponent() {
     };
   }, []); // Se ejecuta solo una vez al montar el componente
 
-  return (
-    <div>
-      {squaresColor.map((color, index) => (
-        <div key={index} style={{ width: '50px', height: '50px', backgroundColor: color }} />
-      ))}
-    </div>
-  );
+  // Crear una matriz de 7x5
+  const rows = 7;
+  const cols = 5;
+  const grid = [];
+
+  for (let i = 0; i < rows; i++) {
+    const row = [];
+    for (let j = 0; j < cols; j++) {
+      row.push(<Square key={`${i}-${j}`} />);
+    }
+    grid.push(<div key={i} style={{ display: 'flex' }}>{row}</div>);
+  }
+
+  return <div>{grid}</div>;
 }
 
-export default MyComponent;
+export default Grid;
