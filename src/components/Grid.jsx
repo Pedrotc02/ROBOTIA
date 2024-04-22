@@ -1,54 +1,46 @@
-import Square from "./Square";
-import mqtt from "mqtt";
+import React, { useState, useEffect } from 'react'; // Importa useState y useEffect desde 'react'
+import mqtt from 'mqtt'; // Asegúrate de importar el paquete mqtt
 
-// Componente principal que genera la matriz de cuadrados
-const Grid = () => {
+function MyComponent() {
+  const [messageReceived, setMessageReceived] = useState(false);
+  const [squaresColor, setSquaresColor] = useState([]); // Define squaresColor y setSquaresColor utilizando useState
 
-    const [messageReceived, setMessageReceived] = useState(false); // Estado para indicar si se ha recibido un mensaje
+  useEffect(() => {
+    const client = mqtt.connect('ws://192.168.48.245:8083'); // Conecta usando WebSocket
 
-    useEffect(() => {
-        const client = mqtt.connect({
-          host: 'ws://192.168.0.100:8083', // Dirección IP del punto de acceso y puerto WebSocket
-        });
-    
-        client.on('connect', () => {
-          console.log('Conectado al servidor MQTT');
-          client.subscribe('map'); // Suscribirse al tema 'map'
-        });
-    
-        client.on('message', (topic, message) => {
-          if (!messageReceived) {
-            // Suponiendo que el mensaje contiene una cadena representando el color
-            const color = message.toString();
-            // Modificar el estado de los colores de los cuadrados
-            setSquaresColor(squaresColor.map(() => color));
-            // Establecer el estado de mensaje recibido a true
-            setMessageReceived(true);
-            // Desuscribirse del tema para no recibir más mensajes
-            client.unsubscribe('map');
-          }
-        });
-    
-        return () => {
-          client.end(); // Desconectar el cliente cuando el componente se desmonte
-        };
-    }, [messageReceived]); // Asegura que el efecto se ejecute solo cuando cambie messageReceived
+    client.on('connect', () => {
+      console.log('Conectado al servidor MQTT');
+      client.subscribe('map'); // Suscríbete al tema 'map'
+    });
 
-
-    // Crear una matriz de 7x5
-    const rows = 7;
-    const cols = 5;
-    const grid = [];
-  
-    for (let i = 0; i < rows; i++) {
-      const row = [];
-      for (let j = 0; j < cols; j++) {
-        row.push(<Square key={`${i}-${j}`} />);
+    client.on('message', (topic, message) => {
+      if (!messageReceived) {
+        const color = message.toString();
+        setSquaresColor(Array(squaresColor.length).fill(color)); // Rellenar array con color recibido
+        setMessageReceived(true);
+        client.unsubscribe('map'); // Desuscribirse del tema para no recibir más mensajes
+        client.end(); // Terminar conexión
       }
-      grid.push(<div key={i} style={{ display: 'flex' }}>{row}</div>);
-    }
-  
-    return <div>{grid}</div>;
-};
+    });
 
-export default Grid;
+    // Manejar errores de conexión
+    client.on('error', (error) => {
+      console.error('Error de conexión:', error);
+    });
+
+    // Devolver una función de limpieza para desconectar el cliente MQTT cuando se desmonte el componente
+    return () => {
+      client.end();
+    };
+  }, []); // Se ejecuta solo una vez al montar el componente
+
+  return (
+    <div>
+      {squaresColor.map((color, index) => (
+        <div key={index} style={{ width: '50px', height: '50px', backgroundColor: color }} />
+      ))}
+    </div>
+  );
+}
+
+export default MyComponent;
