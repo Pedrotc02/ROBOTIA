@@ -35,18 +35,24 @@ function Grid() {
   const rows = 7;
   const cols = 5;
   const grid = [];
+  const clavesMapa = [];
 
   if (mapData) {
     let index = 0;
     for (let i = 0; i < rows; i++) {
       const row = [];
+      const rowMapa = [];
       for (let j = 0; j < cols; j++) {
         const id = mapData.substring(index, index + 2);
         row.push(<Square key={`${i}-${j}`} id={id} />);
+        rowMapa.push(id);
         index += 2;
       }
       grid.push(<div key={i} style={{ display: 'flex' }}>{row}</div>);
+      clavesMapa.push(rowMapa);
     }
+
+    console.log(clavesMapa);
   }
 
   return <div>{grid}</div>;
