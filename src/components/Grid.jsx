@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import mqtt from 'mqtt';
 import Square from './Square';
+import Spinner from './Spinner';
 
 function Grid() {
   const [mapData, setMapData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const client = mqtt.connect('ws://192.168.48.245:8083');
@@ -18,6 +20,7 @@ function Grid() {
         const mapString = message.toString();
         console.log("Mensaje recibido:", mapString);
         setMapData(mapString);
+        setLoading(false);
         client.unsubscribe('map');
         client.end();
       }
@@ -36,6 +39,11 @@ function Grid() {
   const cols = 5;
   const grid = [];
   const clavesMapa = [];
+
+  if (loading) {
+    // Si está cargando, mostrar el mensaje de carga
+    return <Spinner/>;
+  }
 
   if (mapData) {
     let index = 0;

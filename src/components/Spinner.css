@@ -1,0 +1,18 @@
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px; /* Ajusta la altura según tus necesidades */
+}
+
+/* Define la animación */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Aplica la animación al icono */
+.spinner-container svg {
+  animation: spin 1s linear infinite;
+  font-size: 4em;
+}
