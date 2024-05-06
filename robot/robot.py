@@ -5,6 +5,7 @@ from pybricks.parameters import Port
 
 import tkinter as tk
 import paho.mqtt.client as mqtt
+import json
 
 mqtt_server = "192.168.48.245"
 mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
@@ -71,7 +72,7 @@ print("Pickup location:", pickup)
 print("Dropoff location:", dropoff)
 
 # Moviendo el robot desde el punto de recogida hasta el punto de entrega
-move_to_destination(pickup, dropoff)
+# move_to_destination(pickup, dropoff)
 
 def on_connect(client, userdata, flags, rc):
     print("Conectado al servidor MQTT con código de resultado " + str(rc))
@@ -87,7 +88,28 @@ def on_message(client, userdata, msg):
     print("Pedido recibido - Punto de recogida:", pickupPoint, "- Punto de entrega:", deliveryPoint)
     move_to_destination(pickup, dropoff)
    
+client = mqtt.Client()
 
 mqtt_client.on_connect = on_connect
 mqtt_client.on_message = on_message
 mqtt_client.connect(mqtt_server, 8003, 60)
+
+def enviar_odometria():
+    # Obtener la posición actual del robot
+    parametros = robot.state()
+
+    # Crear un mensaje JSON con la información de la odometría
+    odometria = {
+        "posicionX": posicion_actual.x,
+        "posicionY": posicion_actual.y,
+        "orientacion": parametros.angle
+    }
+
+    # Publicar el mensaje JSON en el tópico 'EquipoO/odometria'
+    client.publish("EquipoO/odometria", json.dumps(odometria))
+
+while True:
+    enviar_odometria()
+    # Esperar un cierto intervalo de tiempo antes de enviar la próxima odometría
+    # (por ejemplo, 1 segundo)
+    time.sleep(1)
