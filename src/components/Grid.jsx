@@ -6,34 +6,59 @@ import Spinner from './Spinner';
 function Grid() {
   const [mapData, setMapData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [client, setClient] = useState(null);
+  const [pickupPoint, setPickupPoint] = useState('{0,0}');
+  const [deliveryPoint, setDeliveryPoint] = useState('{0,0}');
+  const pickupOptions = ['{0,0}', '{0,1}', '{0,3}', '{3,0}', '{4,4}', '{5,0}', '{5,2}', '{6,0}', '{6,2}', '{6,4}'];
+  const deliveryOptions = ['{0,0}', '{0,1}', '{0,3}', '{3,0}', '{4,4}', '{5,0}', '{5,2}', '{6,0}', '{6,2}', '{6,4}'];
 
   useEffect(() => {
-    const client = mqtt.connect('ws://192.168.48.245:8083');
+    const mqttClient = mqtt.connect('ws://192.168.48.245:8083');
 
-    client.on('connect', () => {
+    mqttClient.on('connect', () => {
       console.log('Conectado al servidor MQTT');
-      client.subscribe('map');
+      setClient(mqttClient);
+      mqttClient.subscribe('map');
     });
 
-    client.on('message', (topic, message) => {
-      if (!mapData) {
+    mqttClient.on('message', (topic, message) => {
+      if (topic === 'map' && !mapData) {
         const mapString = message.toString();
         console.log("Mensaje recibido:", mapString);
         setMapData(mapString);
         setLoading(false);
-        client.unsubscribe('map');
-        client.end();
+        mqttClient.unsubscribe('map');
       }
     });
 
-    client.on('error', (error) => {
+    mqttClient.on('error', (error) => {
       console.error('Error de conexión:', error);
     });
 
     return () => {
-      client.end();
+      mqttClient.end();
     };
   }, []);
+
+  const handlePickupChange = (event) => {
+    setPickupPoint(event.target.value);
+  };
+
+  const handleDeliveryChange = (event) => {
+    setDeliveryPoint(event.target.value);
+  };
+
+  const handleSubmit = (event) => {
+    console.log('Enviando Pedido: ', pickupPoint,  deliveryPoint);
+    event.preventDefault();
+    if (client) {
+      const payload = {
+        pickupPoint: pickupPoint,
+        deliveryPoint: deliveryPoint
+      };
+      client.publish('EquipoO/pedido', JSON.stringify(payload));
+    }
+  };
 
   const rows = 7;
   const cols = 5;
@@ -59,11 +84,32 @@ function Grid() {
       grid.push(<div key={i} style={{ display: 'flex' }}>{row}</div>);
       clavesMapa.push(rowMapa);
     }
-
-    console.log(clavesMapa);
   }
 
-  return <div>{grid}</div>;
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>
+        <label>
+          Punto de recogida: 
+          <select value={pickupPoint} onChange={handlePickupChange}>
+            {pickupOptions.map((option, index) => (
+              <option key={index} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Punto de entrega: 
+          <select value={deliveryPoint} onChange={handleDeliveryChange}>
+            {deliveryOptions.map((option, index) => (
+              <option key={index} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <button type="submit">Enviar</button>
+      </form>
+      {grid}
+    </div>
+  );
 }
 
 export default Grid;
