@@ -11,6 +11,8 @@ function Grid() {
   const [deliveryPoint, setDeliveryPoint] = useState('{0,0}');
   const pickupOptions = ['{0,0}', '{0,1}', '{0,3}', '{3,0}', '{4,4}', '{5,0}', '{5,2}', '{6,0}', '{6,2}', '{6,4}'];
   const deliveryOptions = ['{0,0}', '{0,1}', '{0,3}', '{3,0}', '{4,4}', '{5,0}', '{5,2}', '{6,0}', '{6,2}', '{6,4}'];
+  const [odometryData, setOdometryData] = useState([]);
+  
 
   useEffect(() => {
     const mqttClient = mqtt.connect('ws://192.168.48.245:8083');
@@ -19,6 +21,7 @@ function Grid() {
       console.log('Conectado al servidor MQTT');
       setClient(mqttClient);
       mqttClient.subscribe('map');
+      mqttClient.subscribe('EquipoO/odometria');
     });
 
     mqttClient.on('message', (topic, message) => {
@@ -28,6 +31,15 @@ function Grid() {
         setMapData(mapString);
         setLoading(false);
         mqttClient.unsubscribe('map');
+      }
+      if (topic === 'EquipoO/odometria') {
+        const odometry = JSON.parse(message.toString());
+        console.log("Mensaje recibido (odometria):", odometry);
+        // Mantener solo los últimos 5 datos de odometría
+        setOdometryData(prevData => {
+          const newData = [...prevData, odometry].slice(-5);
+          return newData;
+        });
       }
     });
 
@@ -87,6 +99,7 @@ function Grid() {
   }
 
   return (
+    
     <div>
       <form onSubmit={handleSubmit}>
         <label>
@@ -108,6 +121,11 @@ function Grid() {
         <button type="submit">Enviar</button>
       </form>
       {grid}
+      <div>
+        {odometryData.map((odometry, index) => (
+          <p key={index}>Odometría {index + 1}: Posición X: {odometry.posicionX}, Posición Y: {odometry.posicionY}, Orientación: {odometry.orientacion}</p>
+        ))}
+      </div>
     </div>
   );
 }
